@@ -5,6 +5,8 @@ from flask import session
 from flask import render_template
 from app.models.user import UserModel
 from app.extensions import db
+from flask import make_response
+import datetime
 
 default_blueprint = Blueprint('default', __name__, url_prefix='/')
 
@@ -37,8 +39,10 @@ def signup():
 @default_blueprint.route('login', methods=['POST'])
 def login():
     message = ''
+        
     email = request.form['email']
     password = request.form['password']
+    remember_me = request.form.get('remember_me')
     
     user = UserModel.query.filter(UserModel.email == email, UserModel.password == password).first()
     
@@ -48,8 +52,12 @@ def login():
             'name': user.name,
             'email': user.email
         }
-        print(session['user_info'])
-        return redirect('/main')
+        if remember_me:
+            expire_date = datetime.datetime.now()
+            expire_date = expire_date + datetime.timedelta(days=90)
+            resp = make_response(redirect('/main'))
+            resp.set_cookie('user_id', str(user.id), expires=expire_date)
+            return resp
     else:
         message = 'Invalid login..'
     
